@@ -18,6 +18,10 @@
     with this program; if not, write to the Free Software Foundation, Inc.,
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+	* v1.23 - 2007-01-23 - Chishm
+		* Fixed bug when DLDI section doesn't exist
+		* addr_t is now a signed int
+
 	* v1.22 - 2007-01-12 - WinterMute
 		* add search paths for dldi files
 
@@ -39,7 +43,7 @@
 	* v1.00 - 2006-12-25 - Chishm
 		* Original release
 */
-#define VERSION "v1.22"
+#define VERSION "v1.23"
 
 #include <stdio.h>
 #include <malloc.h>
@@ -61,7 +65,7 @@
  typedef enum {false = 0, true = !0} bool;
 #endif
 
-typedef unsigned int addr_t;
+typedef signed int addr_t;
 typedef unsigned char data_t;
 
 #define FEATURE_MEDIUM_CANREAD	0x00000001
@@ -110,7 +114,7 @@ enum DldiOffsets {
 	DO_code = 0x80
 };
 
-const char dldiMagicString[] = "\xED\xA5\x8D\xBF Chishm";
+const data_t dldiMagicString[] = "\xED\xA5\x8D\xBF Chishm";
 const char dldiFileExtension[] = ".dldi";
 
 
@@ -122,8 +126,8 @@ void printUsage (char* programName) {
 	return;
 }
 
-unsigned int readAddr (data_t *mem, addr_t offset) {
-	return ( 
+addr_t readAddr (data_t *mem, addr_t offset) {
+	return (addr_t)( 
 			(mem[offset + 0] << 0) |
 			(mem[offset + 1] << 8) |
 			(mem[offset + 2] << 16) |
@@ -162,13 +166,13 @@ bool stringStartsWith (const char *str, const char *start) {
 	return (strstr (str, start) == str);
 }
 
-int quickFind (const char* data, const char* search, size_t dataLen, size_t searchLen) {
+addr_t quickFind (const data_t* data, const data_t* search, size_t dataLen, size_t searchLen) {
 	const int* dataChunk = (const int*) data;
 	int searchChunk = ((const int*)search)[0];
-	int i;
-	size_t dataChunkEnd = dataLen / sizeof(int);
+	addr_t i;
+	addr_t dataChunkEnd = (addr_t)(dataLen / sizeof(int));
 
-	for ( i = 0; i < (int)dataChunkEnd; i++) {
+	for ( i = 0; i < dataChunkEnd; i++) {
 		if (dataChunk[i] == searchChunk) {
 			if ((i*sizeof(int) + searchLen) > dataLen) {
 				return -1;
@@ -376,7 +380,7 @@ int main(int argc, char* argv[])
 	fclose (dldiFile);
 
 	// Find the DSDI reserved space in the file
-	patchOffset = quickFind ((const char*)appFileData, dldiMagicString, appFileSize, sizeof(dldiMagicString)/sizeof(char));
+	patchOffset = quickFind (appFileData, dldiMagicString, appFileSize, sizeof(dldiMagicString)/sizeof(char));
 
 	if (patchOffset < 0) {
 		printf ("%s does not have a DLDI section\n", appFileName);
