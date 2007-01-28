@@ -46,7 +46,6 @@
 #define VERSION "v1.23"
 
 #include <stdio.h>
-#include <malloc.h>
 #include <string.h>
 #include <ctype.h>
 #include <errno.h>
