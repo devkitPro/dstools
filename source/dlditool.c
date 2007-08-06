@@ -18,6 +18,11 @@
     with this program; if not, write to the Free Software Foundation, Inc.,
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+	* v1.24 - 2007-08-02 - SmileyDude
+		* Now using EXIT_SUCCESS and EXIT_FAILURE at the suggestion of MachinShin.
+		* Defined EXIT_NO_DLDI_SECTION for when there is no DLDI section in a file.
+		* Added cast to strcmp() call to appease the compiler.
+		
 	* v1.23 - 2007-01-23 - Chishm
 		* Fixed bug when DLDI section doesn't exist
 		* addr_t is now a signed int
@@ -43,13 +48,14 @@
 	* v1.00 - 2006-12-25 - Chishm
 		* Original release
 */
-#define VERSION "v1.23"
+#define VERSION "v1.24"
 
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
 #include <errno.h>
 #include <stdlib.h>
+#include <stdarg.h>
 
 #ifndef _MSC_VER
 #include <unistd.h>
@@ -80,6 +86,8 @@ typedef unsigned char data_t;
 #define FIX_BSS	0x08
 
 #define DLDI_VERSION 1
+
+#define EXIT_NO_DLDI_SECTION	2
 
 enum DldiOffsets {
 	DO_magicString = 0x00,			// "\xED\xA5\x8D\xBF Chishm"
@@ -324,34 +332,34 @@ int main(int argc, char* argv[])
 		if (dldiFileName == NULL) {
 			dldiFileName = (char*) malloc (strlen (argv[i]) + 1 + sizeof(dldiFileExtension));
 			if (!dldiFileName) {
-				return -1;
+				return EXIT_FAILURE;
 			}
 			strcpy (dldiFileName, argv[i]);
 		} else if (appFileName == NULL) {
 			appFileName = (char*) malloc (strlen (argv[i]) + 1);
 			if (!appFileName) {
-				return -1;
+				return EXIT_FAILURE;
 			}
 			strcpy (appFileName, argv[i]);
 		} else {
 			printUsage (argv[0]);
-			return -1;
+			return EXIT_FAILURE;
 		}
 	}
 
 	if ((dldiFileName == NULL) || (appFileName == NULL)) {
 		printUsage (argv[0]);
-		return -1;
+		return EXIT_FAILURE;
 	}
 
 	if (!(dldiFile = openDLDIFile(argv[0],dldiFileName))) {
 		printf ("Cannot open \"%s\" - %s\n", dldiFileName, strerror(errno));
-			return -1;
+			return EXIT_FAILURE;
 	}
 
 	if (!(appFile = fopen (appFileName, "rb+"))) {
 		printf ("Cannot open \"%s\" - %s\n", appFileName, strerror(errno));
-		return -1;
+		return EXIT_FAILURE;
 	}
 
 	// Load the app file and the DLDI patch file
@@ -371,7 +379,7 @@ int main(int argc, char* argv[])
 		if (appFileData) free (appFileData);
 		if (dldiFileData) free (dldiFileData);
 		printf ("Out of memory\n");
-		return -1;
+		return EXIT_FAILURE;
 	}
 
 	fread (appFileData, 1, appFileSize, appFile);
@@ -383,24 +391,24 @@ int main(int argc, char* argv[])
 
 	if (patchOffset < 0) {
 		printf ("%s does not have a DLDI section\n", appFileName);
-		return -1;
+		return EXIT_NO_DLDI_SECTION;
 	}
 
 	pDH = dldiFileData;
 	pAH = &appFileData[patchOffset];
 
 	// Make sure the DLDI file is valid and usable
-	if (strcmp (dldiMagicString, (char*)&pDH[DO_magicString]) != 0) {
+	if (strcmp ((char*)dldiMagicString, (char*)&pDH[DO_magicString]) != 0) {
 		printf ("Invalid DLDI file\n");
-		return -1;
+		return EXIT_FAILURE;
 	}
 	if (pDH[DO_version] != DLDI_VERSION) {
 		printf ("Incorrect DLDI file version. Expected %d, found %d.\n", DLDI_VERSION, pDH[DO_version]);
-		return -1;
+		return EXIT_FAILURE;
 	}
 	if (pDH[DO_driverSize] > pAH[DO_allocatedSpace]) {
 		printf ("Not enough space for patch. Available %d bytes, need %d bytes\n", ( 1 << pAH[DO_allocatedSpace]), ( 1 << pDH[DO_driverSize]) );
-		return -1;
+		return EXIT_FAILURE;
 	}
 
 	memOffset = readAddr (pAH, DO_text_start);
@@ -487,6 +495,6 @@ int main(int argc, char* argv[])
 
 	printf ("Patched successfully\n");
 
-	return 0;
+	return EXIT_SUCCESS;
 }
 
