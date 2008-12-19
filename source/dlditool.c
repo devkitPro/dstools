@@ -70,7 +70,7 @@
  typedef enum {false = 0, true = !0} bool;
 #endif
 
-typedef signed int addr_t;
+typedef int32_t addr_t;
 typedef unsigned char data_t;
 
 #define FEATURE_MEDIUM_CANREAD	0x00000001
@@ -174,18 +174,18 @@ bool stringStartsWith (const char *str, const char *start) {
 }
 
 addr_t quickFind (const data_t* data, const data_t* search, size_t dataLen, size_t searchLen) {
-	const int* dataChunk = (const int*) data;
-	int searchChunk = ((const int*)search)[0];
+	const int32_t* dataChunk = (const int32_t*) data;
+	int searchChunk = ((const int32_t*)search)[0];
 	addr_t i;
-	addr_t dataChunkEnd = (addr_t)(dataLen / sizeof(int));
+	addr_t dataChunkEnd = (addr_t)(dataLen / sizeof(int32_t));
 
 	for ( i = 0; i < dataChunkEnd; i++) {
 		if (dataChunk[i] == searchChunk) {
-			if ((i*sizeof(int) + searchLen) > dataLen) {
+			if ((i*sizeof(int32_t) + searchLen) > dataLen) {
 				return -1;
 			}
-			if (memcmp (&data[i*sizeof(int)], search, searchLen) == 0) {
-				return i*sizeof(int);
+			if (memcmp (&data[i*sizeof(int32_t)], search, searchLen) == 0) {
+				return i*sizeof(int32_t);
 			}
 		}
 	}
