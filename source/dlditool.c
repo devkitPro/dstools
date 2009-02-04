@@ -56,6 +56,7 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <stdint.h>
 
 #ifndef _MSC_VER
 #include <unistd.h>
