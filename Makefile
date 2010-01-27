@@ -16,7 +16,7 @@ INCLUDES	:=	include
 #---------------------------------------------------------------------------------
 # options for code generation
 #---------------------------------------------------------------------------------
-DEBUGFLAGS	:= -s
+DEBUGFLAGS	:=
 
 
 UNAME := $(shell uname -s)
@@ -44,9 +44,11 @@ ifneq (,$(findstring Linux,$(UNAME)))
 endif
 
 ifneq (,$(findstring Darwin,$(UNAME)))
-	CFLAGS	+= -isysroot /Developer/SDKs/MacOSX10.4u.sdk
-	ARCH	:= -arch i386 -arch ppc
-	LDFLAGS += -arch i386 -arch ppc
+	SDK	:=	/Developer/SDKs/MacOSX10.4u.sdk
+	OSXCFLAGS	:= -mmacosx-version-min=10.4 -isysroot $(SDK) -arch i386 -arch ppc
+	OSXCXXFLAGS	:=	$(OSXCFLAGS)
+	CXXFLAGS	+=	-fvisibility=hidden
+	LDFLAGS		+= -mmacosx-version-min=10.4 -Wl,-syslibroot,$(SDK) -arch i386 -arch ppc
 endif
 
 #---------------------------------------------------------------------------------
@@ -148,18 +150,14 @@ $(OUTPUT): $(OFILES)
 %.o : %.cpp
 	@echo $(notdir $<)
 	$(CXX) -E -MMD $(CFLAGS) $< > /dev/null
-	$(CXX) $(CFLAGS) $(ARCH) -o $@ -c $<
+	$(CXX) $(OSXCXXFLAGS) $(CFLAGS) -o $@ -c $<
 
 #---------------------------------------------------------------------------------
 %.o : %.c
 	@echo $(notdir $<)
 	$(CC) -E -MMD $(CFLAGS) $< > /dev/null
-	$(CC) $(CFLAGS) $(ARCH) -o $@ -c $<
+	$(CC) $(OSXCFLAGS) $(ARCH) -o $@ -c $<
 
-#---------------------------------------------------------------------------------
-%.o : %.s
-	@echo $(notdir $<)
-	@$(CC) -MMD $(ASFLAGS) -o $@ -c $<
 
 -include $(DEPENDS)
 
