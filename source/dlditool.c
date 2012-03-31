@@ -48,8 +48,6 @@
 	* v1.00 - 2006-12-25 - Chishm
 		* Original release
 */
-#define VERSION "v1.24"
-
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
