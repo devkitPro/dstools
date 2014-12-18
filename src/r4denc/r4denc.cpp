@@ -206,23 +206,22 @@ int main(int argc, char *argv[]) {
 		exit(1);
 	}
 
+	if (findKey) {
+		if((strcasecmp(ext.c_str(),".dat")!=0)) {
+			fclose(in);
+			printf("Can't search for key in .nds file\n");
+			exit(1);
+		}
+		printf("finding key ...\n");
+		key = findkey(in);
+	}
+
 	FILE *out = fopen(outfile.c_str(), "wb");
 
 	if (out == NULL) {
 		fclose(in);
 		printf("Error: cannot open %s for writing\n", outfile.c_str());
 		exit(1);
-	}
-
-	if (findKey) {
-		if((strcasecmp(ext.c_str(),".dat")!=0)) {
-			fclose(in);
-			fclose(out);
-			printf("Can't search for key in .nds file\n");
-			exit(1);
-		}
-		printf("finding key ...\n");
-		key = findkey(in);
 	}
 
 	r4denc(in, out, key, decodeFlag);
