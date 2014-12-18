@@ -6,7 +6,7 @@
 	http://www.usay.jp/
 	http://www.yasu.nu/
 	http://www.devkitpro.org
-	
+
 2007/04/22 21:00 - First version
 
 2009/01/08	- combined decode/encode in single app, switch on extension (.nds/.dat)
@@ -20,18 +20,14 @@
 #include <string>
 #include <string.h>
 
+#include <getopt.h>
+
 #define BIT_AT(n, i) ((n >> i) & 1)
 
+void cryptBuffer( unsigned char *buf, unsigned short keyvalue, bool decode) {
+		int n = 0;
 
-void r4denc(FILE *in, FILE *out, bool decode) {
-
-	int r, n = 0;
-
-	unsigned char buf[512];	
-
-	while ((r = fread(buf, 1, 512, in)) > 0) {
-
-		unsigned short key = n ^ 0x484A;
+		unsigned short key = n ^ keyvalue;
 
 		for (int i = 0; i < 512; i ++) {
 
@@ -44,7 +40,7 @@ void r4denc(FILE *in, FILE *out, bool decode) {
 			if (key & 0x0040) xorkey |= 0x04;
 			if (key & 0x0002) xorkey |= 0x02;
 			if (key & 0x0001) xorkey |= 0x01;
-			
+
 			if (!decode) buf[i] ^= xorkey;
 
 			unsigned int k = ((buf[i] << 8) ^ key) << 16;
@@ -74,10 +70,51 @@ void r4denc(FILE *in, FILE *out, bool decode) {
 
 			if (decode) buf[i] ^= xorkey;
 		}
-		fwrite(buf, 1, r, out);
-		n ++;
+}
+
+unsigned short findkey(FILE *in) {
+
+	int r;
+
+	unsigned char inbuf[512];
+	unsigned char decodebuf[512];
+	const char *gamecode = "####";
+
+	r = fread(inbuf,1,512,in);
+	fseek(in, 0, SEEK_SET);
+
+	int testkey;
+
+	for (testkey=0; testkey<0xffff; testkey++) {
+		memcpy(decodebuf,inbuf,512);
+		cryptBuffer(decodebuf,testkey,true);
+		if ( memcmp(&decodebuf[12], gamecode , 4 ) == 0) break;
 	}
-	
+
+	return testkey;
+}
+
+void r4denc(FILE *in, FILE *out, unsigned short key, bool decode) {
+
+	int r;
+
+	unsigned char buf[512];
+
+	while ((r = fread(buf, 1, 512, in)) > 0) {
+
+		cryptBuffer(buf,key,decode);
+		fwrite(buf, 1, r, out);
+	}
+
+}
+
+void showHelp() {
+
+	puts("Usage: r4denc [options] in-file [out-file]\n");
+	puts("--help, -h      Display this information");
+	puts("--findkey, -f   Search for decode key");
+	puts("--key, -k <arg> Use <arg> as encode/decode key");
+	puts("\n");
 }
 
 int main(int argc, char *argv[]) {
@@ -85,25 +122,64 @@ int main(int argc, char *argv[]) {
 	puts("Yasu software - r4denc");
 
 	if (argc < 2) {
-		puts("Usage: r4dec in-file [out-file]");
+		showHelp();
 		return 1;
 	}
 
 	bool decodeFlag = false;
+	bool findKey = false;
+	unsigned short key = 0x484A;
+	char *optend;
 
-	std::string infile = argv[1];
-	std::string outfile;
+	while(1) {
+		static struct option long_options[] = {
+			{"findkey",	no_argument,		0,	'f'},
+			{"help",	no_argument,		0,	'h'},
+			{"key",		required_argument,	0,	'k'},
+			{0, 0, 0, 0}
+		};
+
+		/* getopt_long stores the option index here. */
+		int option_index = 0, c;
+
+		c = getopt_long (argc, argv, "fhk:", long_options, &option_index);
+
+		/* Detect the end of the options. */
+		if (c == -1)
+		break;
+
+		switch(c) {
+
+		case 'f':
+			findKey = true;
+			break;
+		case 'h':
+			showHelp();
+			break;
+		case 'k':
+			key = strtol(optarg,&optend,0);
+			if (errno) {
+				printf("invalid key\n");
+				exit(1);
+			}
+			break;
+		}
+
+	}
+
+	std::string infile, outfile, ext, outext;
 	size_t lastdot;
-	std::string ext, outext;
-	
+
+	if (optind < argc) infile = argv[optind++];
+
 	if ( (lastdot = infile.rfind("."))!= std::string::npos ) {
 		ext = infile.substr(lastdot);
 	}
 
-	if (argc < 3) {
-		outfile = infile.substr(0,lastdot);
+	if (optind < argc) {
+		outfile = argv[optind++];
 	} else {
-		outfile = argv[2];
+		outfile = infile.substr(0,lastdot);
 	}
 
 	if (strcasecmp(ext.c_str(),".dat")==0) {
@@ -111,16 +187,16 @@ int main(int argc, char *argv[]) {
 		outext = ".nds";
 	} else if ( strcasecmp(ext.c_str(),".nds")==0) {
 		decodeFlag=false;
-		outext = ".DAT";
+		outext = ".dat";
 	} else {
 		printf(".nds or .dat required\n");
-		exit(1);		
+		exit(1);
 	}
 
 	if ( (lastdot = outfile.rfind("."))!= std::string::npos ) {
 		outfile = outfile.substr(0,lastdot);
 	}
-	
+
 	outfile += outext;
 
 	FILE *in = fopen(infile.c_str(), "rb");
@@ -138,9 +214,20 @@ int main(int argc, char *argv[]) {
 		exit(1);
 	}
 
-	r4denc(in, out, decodeFlag);
+	if (findKey) {
+		if((strcasecmp(ext.c_str(),".dat")!=0)) {
+			fclose(in);
+			fclose(out);
+			printf("Can't search for key in .nds file\n");
+			exit(1);
+		}
+		printf("finding key ...\n");
+		key = findkey(in);
+	}
 
-	printf("%scoded %s to %s\n",decodeFlag?"de":"en",infile.c_str(),outfile.c_str());
+	r4denc(in, out, key, decodeFlag);
+
+	printf("%scoded %s to %s using key 0x%x\n",decodeFlag?"de":"en",infile.c_str(),outfile.c_str(),key);
 
 	fclose(out);
 	fclose(in);
