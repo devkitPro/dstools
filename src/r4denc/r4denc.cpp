@@ -24,12 +24,12 @@
 
 #define BIT_AT(n, i) ((n >> i) & 1)
 
-void cryptBuffer( unsigned char *buf, unsigned short keyvalue, bool decode) {
+void cryptBuffer( unsigned char *buf, size_t size, unsigned short keyvalue, bool decode) {
 		int n = 0;
 
 		unsigned short key = n ^ keyvalue;
 
-		for (int i = 0; i < 512; i ++) {
+		for (int i = 0; i < size; i ++) {
 
 			unsigned char xorkey = 0;
 			if (key & 0x4000) xorkey |= 0x80;
@@ -76,18 +76,18 @@ unsigned short findkey(FILE *in) {
 
 	int r;
 
-	unsigned char inbuf[512];
-	unsigned char decodebuf[512];
+	unsigned char inbuf[16];
+	unsigned char decodebuf[16];
 	const char *gamecode = "####";
 
-	r = fread(inbuf,1,512,in);
+	r = fread(inbuf,1,16,in);
 	fseek(in, 0, SEEK_SET);
 
 	int testkey;
 
 	for (testkey=0; testkey<0xffff; testkey++) {
-		memcpy(decodebuf,inbuf,512);
-		cryptBuffer(decodebuf,testkey,true);
+		memcpy(decodebuf,inbuf,16);
+		cryptBuffer(decodebuf, 16, testkey, true);
 		if ( memcmp(&decodebuf[12], gamecode , 4 ) == 0) break;
 	}
 
@@ -102,7 +102,7 @@ void r4denc(FILE *in, FILE *out, unsigned short key, bool decode) {
 
 	while ((r = fread(buf, 1, 512, in)) > 0) {
 
-		cryptBuffer(buf,key,decode);
+		cryptBuffer(buf, 512, key, decode);
 		fwrite(buf, 1, r, out);
 	}
 
