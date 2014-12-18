@@ -2,8 +2,8 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.61)
-AC_INIT([dstools],[1.0.0],[davem@devkitpro.org])
-AC_CONFIG_SRCDIR([src/r4denc.cpp])
+AC_INIT([dstools],[1.0.1],[davem@devkitpro.org])
+AC_CONFIG_SRCDIR([src/r4denc/r4denc.cpp])
 
 AM_INIT_AUTOMAKE([1.10])
 
