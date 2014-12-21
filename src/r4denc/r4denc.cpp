@@ -16,10 +16,9 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
-
 #include <string>
 #include <string.h>
-
+#include <errno.h>
 #include <getopt.h>
 
 #define BIT_AT(n, i) ((n >> i) & 1)
