@@ -4,7 +4,6 @@
 AC_PREREQ(2.61)
 AC_INIT([dstools],[1.0.1],[davem@devkitpro.org])
 AC_CONFIG_SRCDIR([src/r4denc/r4denc.cpp])
-
 AM_INIT_AUTOMAKE([1.10])
 
 AC_CANONICAL_BUILD
