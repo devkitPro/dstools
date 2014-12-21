@@ -2,9 +2,9 @@
 
 bin_PROGRAMS = r4denc dlditool
 
-r4denc_SOURCES	=	src/r4denc/r4denc.cpp
+r4denc_SOURCES		=	src/r4denc/r4denc.cpp
 
-dlditool_SOURCES	=	source/dlditool.c
+dlditool_SOURCES	=	src/dlditool/dlditool.c
 
 
 EXTRA_DIST = autogen.sh
