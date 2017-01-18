@@ -406,8 +406,8 @@ int main(int argc, char* argv[])
 		return EXIT_FAILURE;
 	}
 	if (pDH[DO_driverSize] > pAH[DO_allocatedSpace]) {
-		printf ("Not enough space for patch. Available %d bytes, need %d bytes\n", ( 1 << pAH[DO_allocatedSpace]), ( 1 << pDH[DO_driverSize]) );
-		return EXIT_FAILURE;
+		printf ("Warning: Not enough space for patch. Available %d bytes, need %d bytes\n", ( 1 << pAH[DO_allocatedSpace]), ( 1 << pDH[DO_driverSize]) );
+		//return EXIT_FAILURE;
 	}
 
 	memOffset = readAddr (pAH, DO_text_start);
