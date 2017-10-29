@@ -23,10 +23,8 @@
 
 #define BIT_AT(n, i) ((n >> i) & 1)
 
-void cryptBuffer( unsigned char *buf, size_t size, unsigned short keyvalue, bool decode) {
-		int n = 0;
-
-		unsigned short key = n ^ keyvalue;
+void cryptBuffer( unsigned char *buf, size_t size, unsigned short keyvalue, bool decode, unsigned int index) {
+		unsigned short key = (index ^ keyvalue) & 0xFFFF;
 
 		for (int i = 0; i < size; i ++) {
 
@@ -86,23 +84,24 @@ unsigned short findkey(FILE *in) {
 
 	for (testkey=0; testkey<0xffff; testkey++) {
 		memcpy(decodebuf,inbuf,16);
-		cryptBuffer(decodebuf, 16, testkey, true);
+		cryptBuffer(decodebuf, 16, testkey, true, 0);
 		if ( memcmp(&decodebuf[12], gamecode , 4 ) == 0) break;
 	}
 
 	return testkey;
 }
 
-void r4denc(FILE *in, FILE *out, unsigned short key, bool decode) {
-
+void r4denc(FILE *in, FILE *out, unsigned short key, bool decode, bool xorkey) {
+	unsigned int i = 0;
 	int r;
 
 	unsigned char buf[512];
 
 	while ((r = fread(buf, 1, 512, in)) > 0) {
 
-		cryptBuffer(buf, 512, key, decode);
+		cryptBuffer(buf, 512, key, decode, xorkey ? i : 0);
 		fwrite(buf, 1, r, out);
+		++i;
 	}
 
 }
@@ -112,6 +111,7 @@ void showHelp() {
 	puts("Usage: r4denc [options] in-file [out-file]\n");
 	puts("--help, -h      Display this information");
 	puts("--findkey, -f   Search for decode key");
+	puts("--xorkey, -x    XOR the key with the block index (some R4 variants use this)");
 	puts("--key, -k <arg> Use <arg> as encode/decode key");
 	puts("\n");
 }
@@ -127,6 +127,7 @@ int main(int argc, char *argv[]) {
 
 	bool decodeFlag = false;
 	bool findKey = false;
+	bool xorKey = false;
 	unsigned short key = 0x484A;
 	char *optend;
 
@@ -135,13 +136,14 @@ int main(int argc, char *argv[]) {
 			{"findkey",	no_argument,		0,	'f'},
 			{"help",	no_argument,		0,	'h'},
 			{"key",		required_argument,	0,	'k'},
+			{"xorkey",	no_argument,		0,	'x'},
 			{0, 0, 0, 0}
 		};
 
 		/* getopt_long stores the option index here. */
 		int option_index = 0, c;
 
-		c = getopt_long (argc, argv, "fhk:", long_options, &option_index);
+		c = getopt_long (argc, argv, "fhk:x", long_options, &option_index);
 
 		/* Detect the end of the options. */
 		if (c == -1)
@@ -151,6 +153,9 @@ int main(int argc, char *argv[]) {
 
 		case 'f':
 			findKey = true;
+			break;
+		case 'x':
+			xorKey = true;
 			break;
 		case 'h':
 			showHelp();
@@ -223,7 +228,7 @@ int main(int argc, char *argv[]) {
 		exit(1);
 	}
 
-	r4denc(in, out, key, decodeFlag);
+	r4denc(in, out, key, decodeFlag, xorKey);
 
 	printf("%scoded %s to %s using key 0x%x\n",decodeFlag?"de":"en",infile.c_str(),outfile.c_str(),key);
 
