@@ -18,11 +18,14 @@
     with this program; if not, write to the Free Software Foundation, Inc.,
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+	* v1.25 - 2017-01-18 - ichfly
+		* Made not enough space for patch a warning
+
 	* v1.24 - 2007-08-02 - SmileyDude
 		* Now using EXIT_SUCCESS and EXIT_FAILURE at the suggestion of MachinShin.
 		* Defined EXIT_NO_DLDI_SECTION for when there is no DLDI section in a file.
 		* Added cast to strcmp() call to appease the compiler.
-		
+
 	* v1.23 - 2007-01-23 - Chishm
 		* Fixed bug when DLDI section doesn't exist
 		* addr_t is now a signed int
@@ -55,6 +58,8 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <stdint.h>
+
+#define DLDITOOL_VERSION "1.25"
 
 #ifndef _MSC_VER
 #include <unistd.h>
@@ -325,7 +330,7 @@ int main(int argc, char* argv[])
 	
 	int i;
 
-	printf ("Dynamically Linked Disk Interface patch tool " VERSION " by Michael Chisholm (Chishm)\n\n");
+	printf ("Dynamically Linked Disk Interface patch tool " DLDITOOL_VERSION " by Michael Chisholm (Chishm)\n\n");
 
 	for (i = 1; i < argc; i++) {
 		if (dldiFileName == NULL) {
