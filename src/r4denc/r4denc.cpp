@@ -23,8 +23,8 @@
 
 #define BIT_AT(n, i) ((n >> i) & 1)
 
-void cryptBuffer( unsigned char *buf, size_t size, unsigned short keyvalue, bool decode, unsigned int index) {
-		unsigned short key = (index ^ keyvalue) & 0xFFFF;
+void cryptBuffer( unsigned char *buf, size_t size, int keyvalue, bool decode, int n) {
+		unsigned short key = n ^ keyvalue;
 
 		for (int i = 0; i < size; i ++) {
 
@@ -67,9 +67,10 @@ void cryptBuffer( unsigned char *buf, size_t size, unsigned short keyvalue, bool
 
 			if (decode) buf[i] ^= xorkey;
 		}
+
 }
 
-unsigned short findkey(FILE *in) {
+int findkey(FILE *in) {
 
 	int r;
 
@@ -91,19 +92,17 @@ unsigned short findkey(FILE *in) {
 	return testkey;
 }
 
-void r4denc(FILE *in, FILE *out, unsigned short key, bool decode, bool xorkey) {
-	unsigned int i = 0;
-	int r;
+void r4denc(FILE *in, FILE *out, int keyvalue, bool decode) {
 
-	unsigned char buf[512];
+	int r, n = 0;
+
+	unsigned char buf[512];	
 
 	while ((r = fread(buf, 1, 512, in)) > 0) {
-
-		cryptBuffer(buf, 512, key, decode, xorkey ? i : 0);
+		cryptBuffer(buf,512,keyvalue,decode,n);
 		fwrite(buf, 1, r, out);
-		++i;
+		n++;
 	}
-
 }
 
 void showHelp() {
@@ -111,7 +110,6 @@ void showHelp() {
 	puts("Usage: r4denc [options] in-file [out-file]\n");
 	puts("--help, -h      Display this information");
 	puts("--findkey, -f   Search for decode key");
-	puts("--xorkey, -x    XOR the key with the block index (some R4 variants use this)");
 	puts("--key, -k <arg> Use <arg> as encode/decode key");
 	puts("\n");
 }
@@ -127,8 +125,7 @@ int main(int argc, char *argv[]) {
 
 	bool decodeFlag = false;
 	bool findKey = false;
-	bool xorKey = false;
-	unsigned short key = 0x484A;
+	int key = 0x484A;
 	char *optend;
 
 	while(1) {
@@ -136,7 +133,6 @@ int main(int argc, char *argv[]) {
 			{"findkey",	no_argument,		0,	'f'},
 			{"help",	no_argument,		0,	'h'},
 			{"key",		required_argument,	0,	'k'},
-			{"xorkey",	no_argument,		0,	'x'},
 			{0, 0, 0, 0}
 		};
 
@@ -153,9 +149,6 @@ int main(int argc, char *argv[]) {
 
 		case 'f':
 			findKey = true;
-			break;
-		case 'x':
-			xorKey = true;
 			break;
 		case 'h':
 			showHelp();
@@ -228,7 +221,7 @@ int main(int argc, char *argv[]) {
 		exit(1);
 	}
 
-	r4denc(in, out, key, decodeFlag, xorKey);
+	r4denc(in, out, key, decodeFlag);
 
 	printf("%scoded %s to %s using key 0x%x\n",decodeFlag?"de":"en",infile.c_str(),outfile.c_str(),key);
 
