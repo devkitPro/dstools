@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.61)
-AC_INIT([dstools],[1.3.2],[https://github.com/devkitPro/dstools/issues])
+AC_INIT([dstools],[1.3.3],[https://github.com/devkitPro/dstools/issues])
 AC_CONFIG_SRCDIR([src/r4denc/r4denc.cpp])
 AM_INIT_AUTOMAKE([subdir-objects])
 
@@ -20,7 +20,7 @@ case "$host" in
 esac
 
 case "$host" in
-   *-apple-darwin*)
+   x86_64-apple-darwin* | aarch64-apple-darwin* )
       STDCPP_LIBS="-lc++"
       ;;
 
